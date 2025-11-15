@@ -83,13 +83,19 @@ class SyncManager:
         # 下载：检查哪些文件本地不存在
         local_file_ids = {img["id"].replace("\\", "/") for img in local_images}
         to_download = []
+
+        # 获取提供商名称
+        provider_name = None
+        if hasattr(self.image_host, 'config') and self.image_host.config:
+            provider_name = self.image_host.config.get('provider', '').lower()
+
         for img in remote_images:
             remote_id = img["id"].replace("\\", "/")
-            # 使用规范化方法处理远程ID
-            normalized_remote_id = self._normalize_remote_id(remote_id)
+
+            # 根据提供商规范化远程ID
+            normalized_remote_id = self._normalize_remote_id(remote_id, provider_name)
+
             if normalized_remote_id not in local_file_ids:
-                # 更新img的id为规范化后的ID，以便后续正确显示
-                img["id"] = normalized_remote_id
                 to_download.append(img)
         print(f"\n本地不存在的文件: {len(to_download)} 个")
 
@@ -171,7 +177,7 @@ class SyncManager:
                         
                         # 检查文件是否已存在（双重检查）
                         if save_path.exists():
-                            logger.info(f"文件已存在，跳过: {filename}")
+                            print(f"文件已存在，跳过: {filename}")
                             skipped_count += 1
                             pbar.update(1)
                             continue
